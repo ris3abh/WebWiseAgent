@@ -18,7 +18,7 @@ This project aims to create an intelligent personal assistant capable of handlin
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/WebWiseAgent.git
+   git clone https://github.com/ris3abh/WebWiseAgent.git
    cd WebWiseAgent
    ```
 
