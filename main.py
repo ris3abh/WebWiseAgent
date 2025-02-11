@@ -1,5 +1,7 @@
 # main.py
 
+import shutil
+
 from utils.llm import llm_check_search, llm_answer
 from utils.file_handler import save_markdown
 from prompts.system_prompts import system_prompt_search, system_prompt_answer, system_prompt_cited_answer
