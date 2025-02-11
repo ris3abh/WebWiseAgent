@@ -47,9 +47,9 @@ This project aims to create an intelligent personal assistant capable of handlin
 
 To run the project, execute the following command:
 
-    ```bash
-    python main.py
-    ```
+   ```bash
+   python main.py
+   ```
 
 ## Future Scope
 
