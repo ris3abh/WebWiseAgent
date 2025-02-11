@@ -1,6 +1,8 @@
 ## Project Overview
 This project aims to create an intelligent personal assistant capable of handling various tasks typically performed on a laptop. It leverages the power of AI, specifically utilizing a customizable agent similar to Perplexity, to provide users with a seamless and efficient experience. The agent can perform tasks such as document reading and writing, and it can be extended with advanced features like Retrieval-Augmented Generation (RAG) to enhance its capabilities.
 
+![Mermaid Image](src/mermaid.png)
+
 ## Features
 - **Google Search Integration**: The agent can decide whether a user's query requires a Google search and perform the search if necessary.
 - **Customizable Responses**: The agent is designed to provide informative and relevant responses based on user queries.
