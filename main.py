@@ -6,11 +6,13 @@ from utils.llm import llm_check_search, llm_answer
 from utils.file_handler import save_markdown
 from prompts.system_prompts import system_prompt_search, system_prompt_answer, system_prompt_cited_answer
 from prompts.user_prompts import search_prompt, answer_prompt, cited_answer_prompt
+from utils.web_scraper import EnhancedWebScraper
 
 def main():
     msg_history = None
     file_path = "playground.md"
     save_path = None
+    scraper = EnhancedWebScraper()
 
     # Start with an empty file
     with open(file_path, 'w') as file:
@@ -33,6 +35,7 @@ def main():
         else:
             save_markdown(f"# {query}\n\n", file_path)
             search_dic = llm_check_search(query, file_path, msg_history)
+            search_dic = scraper.parse_google_results(query)
             msg_history = llm_answer(query, file_path, msg_history, search_dic)
             save_path = save_path or f"{query}.md"
             print(f"AI response recorded into {file_path}")
