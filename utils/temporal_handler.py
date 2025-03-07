@@ -63,7 +63,12 @@ class TemporalHandler:
         """Stop the background scheduler."""
         if self.scheduler_thread and self.scheduler_thread.is_alive():
             self.stop_scheduler = True
-            self.scheduler_thread.join(timeout=5.0)
+            try:
+                self.scheduler_thread.join(timeout=5.0)
+                if self.scheduler_thread.is_alive():
+                    logger.warning("Scheduler thread did not terminate gracefully")
+            except Exception as e:
+                logger.error(f"Error stopping scheduler thread: {e}")
             logger.info("Stopped memory management scheduler")
         
     def _run_scheduler(self):
@@ -227,46 +232,36 @@ class TemporalHandler:
         }
     
     def _evaluate_memory_status(self, entity: Dict, context: Dict, project_name: str) -> Dict:
-        """
-        Evaluate whether a temporary memory should be promoted to permanent.
+        """Evaluate whether a temporary memory should be promoted to permanent."""
+        # Consider frequency of mentions
+        mention_count = self._get_entity_mention_count(entity["id"])
         
-        Args:
-            entity: Entity data
-            context: Context information from _get_entity_context
-            project_name: Name of the project
-            
-        Returns:
-            Decision dictionary with action and metadata
-        """
-        # Some basic heuristics
-        strong_relationships = 0
-        for neighbor in context["neighbors"]:
-            for rel in neighbor.get("relationships", []):
-                # Consider relationships with weight > 0.7 as strong
-                if rel.get("weight", 0) > 0.7:
-                    strong_relationships += 1
+        # Consider recency of mentions
+        recency_score = self._calculate_recency_score(context.get("last_mentioned"))
         
-        # If entity has strong relationships or cross-project links, promote it
-        if strong_relationships >= 2 or context["cross_project_links"] > 0:
+        # Consider semantic importance (could query LLM for this)
+        importance_score = entity.get("metadata", {}).get("confidence", 0.5)
+        
+        # Calculate weighted importance score
+        final_score = (0.3 * mention_count + 0.3 * recency_score + 0.4 * importance_score)
+        
+        # Make decision based on final score
+        if final_score >= 0.7:
             return {
                 "action": "promote",
-                "reason": f"Entity has {strong_relationships} strong relationships and {context['cross_project_links']} cross-project links"
+                "reason": f"Entity has high importance score: {final_score:.2f}"
             }
-            
-        # For entities with some importance but not enough for promotion,
-        # extend their temporary status
-        if strong_relationships > 0:
+        elif final_score >= 0.4:
             return {
                 "action": "update_expiration",
-                "new_expiration_days": 60,  # Extend beyond regular temporary 
-                "reason": "Entity has some importance but not enough for promotion"
+                "new_expiration_days": 60,
+                "reason": f"Entity has medium importance score: {final_score:.2f}"
             }
-            
-        # Otherwise leave as is
-        return {
-            "action": "none",
-            "reason": "Insufficient importance for promotion or extension"
-        }
+        else:
+            return {
+                "action": "none",
+                "reason": f"Entity has low importance score: {final_score:.2f}"
+            }
     
     def _update_expiration_date(self, entity_id: str, days: int) -> bool:
         """Update the expiration date for an entity."""

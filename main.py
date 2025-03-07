@@ -23,53 +23,56 @@ from config import (
 
 def initialize_graph_rag():
     """Initialize all components of the graph-based RAG system."""
-    # Initialize OpenAI client
-    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
-    
-    # Initialize Neo4j connection
     try:
-        graph_store = Neo4jGraphStore(
-            uri=NEO4J_URI,
-            username=NEO4J_USERNAME,
-            password=NEO4J_PASSWORD
+        # Initialize OpenAI client
+        openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        
+        # Initialize Neo4j connection
+        try:
+            graph_store = Neo4jGraphStore(
+                uri=NEO4J_URI,
+                username=NEO4J_USERNAME,
+                password=NEO4J_PASSWORD
+            )
+            print("Neo4j connection established")
+        except Exception as e:
+            print(f"Failed to connect to Neo4j: {e}")
+            return None
+        # Initialize other components
+        memory_manager = MemoryManager(
+            graph_store=graph_store,
+            openai_client=openai_client,
+            temp_memory_days=TEMP_MEMORY_DAYS,
+            permanent_memory_days=PERMANENT_MEMORY_DAYS,
+            llm_model=LLM_MODEL
         )
-        print("Neo4j connection established")
+        
+        temporal_handler = TemporalHandler(
+            graph_store=graph_store,
+            memory_manager=memory_manager,
+            review_interval_days=MEMORY_REVIEW_INTERVAL
+        )
+        
+        bm_ragam = BM_RAGAM()
+        
+        graph_rag = GraphRAG(
+            graph_store=graph_store,
+            bm_ragam=bm_ragam
+        )
+        
+        # Start background scheduler for temporal processing
+        temporal_handler.start_scheduler()
+        
+        return {
+            "graph_store": graph_store,
+            "memory_manager": memory_manager,
+            "temporal_handler": temporal_handler,
+            "graph_rag": graph_rag,
+            "openai_client": openai_client
+        }
     except Exception as e:
-        print(f"Failed to connect to Neo4j: {e}")
+        print(f"Error initializing Graph RAG system: {e}")
         return None
-    
-    # Initialize other components
-    memory_manager = MemoryManager(
-        graph_store=graph_store,
-        openai_client=openai_client,
-        temp_memory_days=TEMP_MEMORY_DAYS,
-        permanent_memory_days=PERMANENT_MEMORY_DAYS,
-        llm_model=LLM_MODEL
-    )
-    
-    temporal_handler = TemporalHandler(
-        graph_store=graph_store,
-        memory_manager=memory_manager,
-        review_interval_days=MEMORY_REVIEW_INTERVAL
-    )
-    
-    bm_ragam = BM_RAGAM()
-    
-    graph_rag = GraphRAG(
-        graph_store=graph_store,
-        bm_ragam=bm_ragam
-    )
-    
-    # Start background scheduler for temporal processing
-    temporal_handler.start_scheduler()
-    
-    return {
-        "graph_store": graph_store,
-        "memory_manager": memory_manager,
-        "temporal_handler": temporal_handler,
-        "graph_rag": graph_rag,
-        "openai_client": openai_client
-    }
 
 def main():
     msg_history = None

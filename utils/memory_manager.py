@@ -246,30 +246,36 @@ class MemoryManager:
         cross_project_links = []
         
         for entity in entities:
-            # For each entity, check if it exists in other projects
-            entity_links = self.graph_store.get_entity_links_across_projects(entity["text"])
-            
-            if len(entity_links) > 1:  # Entity exists in multiple projects
-                for i in range(len(entity_links)):
-                    for j in range(i + 1, len(entity_links)):
-                        # Create link between entity instances in different projects
-                        entity1 = entity_links[i]["entity"]
-                        entity2 = entity_links[j]["entity"]
-                        project1 = entity_links[i]["project"]
-                        project2 = entity_links[j]["project"]
-                        
-                        link_id = self.graph_store.create_cross_project_link(
-                            entity1_id=entity1["id"],
-                            entity2_id=entity2["id"]
-                        )
-                        
-                        if link_id:
-                            cross_project_links.append({
-                                "link_id": link_id,
-                                "entity": entity["text"],
-                                "project1": project1,
-                                "project2": project2
-                            })
+            try:
+                # For each entity, check if it exists in other projects
+                entity_links = self.graph_store.get_entity_links_across_projects(entity["text"])
+                
+                if len(entity_links) > 1:  # Entity exists in multiple projects
+                    for i in range(len(entity_links)):
+                        for j in range(i + 1, len(entity_links)):
+                            try:
+                                # Create link between entity instances in different projects
+                                entity1 = entity_links[i]["entity"]
+                                entity2 = entity_links[j]["entity"]
+                                project1 = entity_links[i]["project"]
+                                project2 = entity_links[j]["project"]
+                                
+                                link_id = self.graph_store.create_cross_project_link(
+                                    entity1_id=entity1["id"],
+                                    entity2_id=entity2["id"]
+                                )
+                                
+                                if link_id:
+                                    cross_project_links.append({
+                                        "link_id": link_id,
+                                        "entity": entity["text"],
+                                        "project1": project1,
+                                        "project2": project2
+                                    })
+                            except Exception as e:
+                                logger.error(f"Error creating cross-project link: {e}")
+            except Exception as e:
+                logger.error(f"Error processing entity for cross-project links: {e}")
         
         return cross_project_links
     

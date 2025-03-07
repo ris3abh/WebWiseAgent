@@ -5,8 +5,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any, Set
 
-from neo4j import GraphDatabase, Driver, Session
 from neo4j.exceptions import Neo4jError
+from neo4j import GraphDatabase, Driver, Session, TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -15,9 +16,20 @@ logger = logging.getLogger(__name__)
 class Neo4jGraphStore:
     """Interface for storing and retrieving knowledge graph data in Neo4j."""
     
+
     def __init__(self, uri: str, username: str, password: str):
         """Initialize Neo4j connection."""
-        self.driver = GraphDatabase.driver(uri, auth=(username, password))
+        # Handle different connection protocols
+        if uri.startswith("neo4j+s://"):
+            self.driver = GraphDatabase.driver(
+                uri, 
+                auth=(username, password),
+                encrypted=True,
+                trust=TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
+            )
+        else:
+            self.driver = GraphDatabase.driver(uri, auth=(username, password))
+        
         self._verify_connection()
         self._setup_constraints()
         logger.info("Neo4j connection established successfully")
